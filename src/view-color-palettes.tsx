@@ -105,6 +105,7 @@ export default function Command() {
 
 ${colorList}
 
+test commit
 ---
 
 ### Color Palette

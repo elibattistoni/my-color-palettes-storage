@@ -183,6 +183,13 @@ export default function Command() {
             }
             actions={
               <ActionPanel>
+                {/* 
+                //>> TODO ELISA add Action
+                // instead of showing the details, open a link to coolors to see the palette
+                // you have to convert all the colors to hex format automatically
+
+                TODO add action that converts the colors (using the Color Picker)
+                */}
                 <Action.Push title="Show Palette Details" target={<Detail markdown={createMdDetails(palette)} />} />
                 <Action.CopyToClipboard
                   title="Copy All Colors"
@@ -198,7 +205,7 @@ export default function Command() {
                   />
                 ))}
                 {/* 
-                //>>> TODO check that the two commands below work as expected
+                //>>> TODO ELISA check that the two commands below work as expected
                 */}
                 <Action.Push
                   title="Edit Palette"

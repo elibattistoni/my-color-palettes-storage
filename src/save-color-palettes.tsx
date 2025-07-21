@@ -1,16 +1,10 @@
-import { Action, ActionPanel, Form, Icon, LaunchProps, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Form, Icon, LaunchProps, open, popToRoot, showToast, Toast } from "@raycast/api";
 import { FormValidation, useForm, useLocalStorage } from "@raycast/utils";
 import { useState } from "react";
 import { ColorPaletteFormFields, SavedPalette } from "./types";
+import { isValidColor } from "./utils";
 
-// Helper function to validate hex color
-const isValidColor = (color: string): boolean => {
-  const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-  const rgbPattern = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
-  const rgbaPattern = /^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(0|1|0?\.\d+)\s*\)$/;
-
-  return hexPattern.test(color) || rgbPattern.test(color) || rgbaPattern.test(color);
-};
+// Helper function to validate color formats
 
 const defaultColors = [{ id: 1, color: "" }];
 const defaultFormValues: ColorPaletteFormFields = {
@@ -20,6 +14,8 @@ const defaultFormValues: ColorPaletteFormFields = {
   keywords: [],
   color1: "",
 };
+
+//>> TODO ELISA Action get all colors from clipboard (e.g. max 10 colors) and paste them in the form
 
 export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFormFields }>) {
   const { draftValues } = props;
@@ -45,6 +41,54 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
   );
 
   const [updateKeywordsValue, setUpdateKeywordsValue] = useState("");
+
+  // Determine which field to focus on when opening a draft
+  const getFocusField = (): string | undefined => {
+    if (draftValues && Object.keys(draftValues).length > 0) {
+      // Find all color fields that have values
+      const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
+      const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof ColorPaletteFormFields]);
+
+      if (colorFieldsWithValues.length > 0) {
+        // Focus on the field after the last filled color field
+        const lastFilledIndex = Math.max(...colorFieldsWithValues.map((key) => parseInt(key.replace("color", ""))));
+        const nextFieldIndex = lastFilledIndex + 1;
+        const nextField = `color${nextFieldIndex}`;
+
+        // Check if the next field exists in our colors array
+        if (nextFieldIndex <= colors.length) {
+          return nextField;
+        } else {
+          // If no next field, focus on the last available field
+          return `color${colors.length}`;
+        }
+      } else {
+        // If no color fields have values, focus on the first color field
+        return "color1";
+      }
+    }
+    // For new forms (no draft), don't override default focus
+    return undefined;
+  };
+
+  async function pickColor() {
+    try {
+      showToast({
+        style: Toast.Style.Success,
+        title: "Opening Color Picker",
+        message: "The picked color will be copied to clipboard",
+      });
+
+      await open("raycast://extensions/thomas/color-picker/pick-color");
+    } catch (error) {
+      console.log("Failed to launch color picker:", error);
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Error",
+        message: "Failed to open color picker extension",
+      });
+    }
+  }
 
   const getValidationRules = () => {
     const rules: Record<string, any> = {
@@ -126,6 +170,9 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
 
         // Reset form after successful submission
         clearForm();
+
+        // Return to Raycast command list
+        await popToRoot();
       } catch (error) {
         console.error("Error saving palette:", error);
         showToast({
@@ -197,6 +244,7 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
               shortcut={{ modifiers: ["cmd"], key: "backspace" }}
             />
           )}
+          <Action title="Pick Color" shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} onAction={pickColor} />
           <Action title="Clear Form" onAction={clearForm} shortcut={{ modifiers: ["cmd", "shift"], key: "r" }} />
         </ActionPanel>
       }
@@ -243,12 +291,14 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
 
       {colors.map((color, index) => {
         const colorKey = `color${index + 1}` as keyof ColorPaletteFormFields;
+        const shouldFocus = getFocusField() === colorKey;
         return (
           <Form.TextField
             key={color.id}
             {...(itemProps[colorKey] as any)}
             title={`${index + 1}. Color${index === 0 ? "*" : ""}`}
             placeholder="e.g., #FF5733, rgb(255, 87, 51), or rgba(255, 87, 51, 0.8)"
+            autoFocus={shouldFocus}
           />
         );
       })}

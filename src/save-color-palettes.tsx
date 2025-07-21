@@ -48,8 +48,21 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
 
   const getValidationRules = () => {
     const rules: Record<string, any> = {
-      name: FormValidation.Required,
+      name: (value: string) => {
+        if (!value) {
+          return FormValidation.Required;
+        } else {
+          if (value.length >= 16) {
+            return "Characters limit exceeded. Keep it under 15 characters.";
+          }
+        }
+      },
       mode: FormValidation.Required,
+      description: (value: string) => {
+        if (value && value.length >= 51) {
+          return "Characters limit exceeded. Keep it under 50 characters.";
+        }
+      },
     };
 
     // Add validation for each color field
@@ -102,13 +115,13 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
           createdAt: new Date().toISOString(),
         };
 
-        const updatedPalettes = [...(colorPalettes ?? []), palette];
+        const updatedPalettes = [palette, ...(colorPalettes ?? [])];
         await setColorPalettes(updatedPalettes);
 
         showToast({
           style: Toast.Style.Success,
           title: "Success!",
-          message: `${values.name} ${values.mode} color palette created with ${colorValues.length} colors`,
+          message: `${values.name} ${values.mode} color palette created with ${colorValues.length} color${colorValues.length > 1 ? "s" : ""}`,
         });
 
         // Reset form after successful submission
@@ -194,7 +207,7 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
       <Form.TextArea
         {...itemProps.description}
         title="Description"
-        info="Insert a description or some notes (optional)"
+        info="Insert a short description (optional). It should be under 50 characters."
       />
       <Form.Dropdown {...itemProps.mode} title="Mode*">
         <Form.Dropdown.Item value="light" title="Light Color Palette" icon={Icon.Sun} />

@@ -1,17 +1,57 @@
-import { Action, ActionPanel, Detail, Icon, LaunchType, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon, Keyboard, LaunchType, List, showToast, Toast } from "@raycast/api";
 import { useLocalStorage } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import SaveColorPalettesCommand from "./save-color-palettes";
 import { SavedPalette } from "./types";
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const date = new Date(dateString);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const day = pad(date.getDate());
+  const month = pad(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+const createMdOverview = (palette: SavedPalette) => {
+  return `
+# ${palette.name}
+
+**Description:** ${palette.description}
+`;
+};
+
+const createMdDetails = (palette: SavedPalette) => {
+  const colorSwatches = palette.colors
+    .map(
+      (color) =>
+        `<div style="width: 50px; height: 50px; background-color: ${color}; display: inline-block; margin-right: 10px; border-radius: 4px;"></div>`,
+    )
+    .join("");
+
+  const colorList = palette.colors.map((color, index) => `${index + 1}. \`${color}\``).join("\n");
+
+  return `
+# ${palette.name}
+
+**Mode:** ${palette.mode === "dark" ? "Dark Color Palette" : "Light Color Palette"}
+
+**Description:** ${palette.description}
+
+**Keywords:** ${palette.keywords && palette.keywords.length > 0 ? palette.keywords.join(", ") : "No keywords"}
+
+**Created:** ${formatDate(palette.createdAt)}
+
+**Colors (${palette.colors.length}):**
+
+${colorList}
+---
+
+### Color Palette
+${colorSwatches}
+    `;
 };
 
 export default function Command() {
@@ -80,39 +120,6 @@ export default function Command() {
     return formData;
   };
 
-  const createPaletteMarkdown = (palette: SavedPalette) => {
-    const colorSwatches = palette.colors
-      .map(
-        (color) =>
-          `<div style="width: 50px; height: 50px; background-color: ${color}; display: inline-block; margin-right: 10px; border-radius: 4px;"></div>`,
-      )
-      .join("");
-
-    const colorList = palette.colors.map((color, index) => `${index + 1}. \`${color}\``).join("\n");
-
-    return `
-# ${palette.name}
-
-**Mode:** ${palette.mode === "dark" ? "Dark Color Palette" : "Light Color Palette"}
-
-**Description:** ${palette.description}
-
-**Keywords:** ${palette.keywords && palette.keywords.length > 0 ? palette.keywords.join(", ") : "No keywords"}
-
-**Created:** ${formatDate(palette.createdAt)}
-
-**Colors (${palette.colors.length}):**
-
-${colorList}
-
-test commit
----
-
-### Color Palette
-${colorSwatches}
-    `;
-  };
-
   return (
     <List
       isLoading={isLoading}
@@ -120,6 +127,7 @@ ${colorSwatches}
       onSearchTextChange={setSearchText}
       navigationTitle="Search Color Palettes"
       searchBarPlaceholder="Search your Color Palette..."
+      isShowingDetail={true}
     >
       {filteredList.length === 0 ? (
         <List.EmptyView
@@ -136,15 +144,62 @@ ${colorSwatches}
               tintColor: palette.mode === "dark" ? "#000000" : "#ffffff",
             }}
             title={palette.name}
-            subtitle={palette.description}
             keywords={palette.keywords || []}
-            accessories={[{ text: `${palette.colors.length} colors` }, { text: formatDate(palette.createdAt) }]}
+            detail={
+              <List.Item.Detail
+                markdown={createMdOverview(palette)}
+                metadata={
+                  <List.Item.Detail.Metadata>
+                    <List.Item.Detail.Metadata.Label
+                      icon={palette.mode === "dark" ? Icon.Moon : Icon.Sun}
+                      title="Mode"
+                      text={palette.mode.charAt(0).toUpperCase() + palette.mode.slice(1) + " Color Palette"}
+                    />
+                    <List.Item.Detail.Metadata.TagList title="Keywords">
+                      {palette.keywords && palette.keywords.length > 0 ? (
+                        palette.keywords.map((keyword, idx) => (
+                          <List.Item.Detail.Metadata.TagList.Item
+                            key={idx}
+                            text={keyword}
+                            color={palette.mode === "dark" ? "#000000" : "#ffffff"}
+                          />
+                        ))
+                      ) : (
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text="None"
+                          color={palette.mode === "dark" ? "#000000" : "#ffffff"}
+                        />
+                      )}
+                    </List.Item.Detail.Metadata.TagList>
+                    <List.Item.Detail.Metadata.Separator />
+                    {palette.colors.map((color, idx) => (
+                      <List.Item.Detail.Metadata.TagList key={idx} title={`Color ${idx + 1}`}>
+                        <List.Item.Detail.Metadata.TagList.Item text={color} color={color} />
+                      </List.Item.Detail.Metadata.TagList>
+                    ))}
+                  </List.Item.Detail.Metadata>
+                }
+              />
+            }
             actions={
               <ActionPanel>
-                <Action.Push
-                  title="Show Palette Details"
-                  target={<Detail markdown={createPaletteMarkdown(palette)} />}
+                <Action.Push title="Show Palette Details" target={<Detail markdown={createMdDetails(palette)} />} />
+                <Action.CopyToClipboard
+                  title="Copy All Colors"
+                  content={palette.colors.join(";")}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
                 />
+                {palette.colors.map((color, idx) => (
+                  <Action.CopyToClipboard
+                    key={idx}
+                    title={`Copy Color ${idx + 1}`}
+                    content={palette.colors[idx]}
+                    shortcut={{ modifiers: ["cmd", "shift"], key: String(idx + 1) as Keyboard.KeyEquivalent }}
+                  />
+                ))}
+                {/* 
+                //>>> TODO check that the two commands below work as expected
+                */}
                 <Action.Push
                   title="Edit Palette"
                   target={
@@ -169,8 +224,7 @@ ${colorSwatches}
                   icon={Icon.Duplicate}
                   shortcut={{ modifiers: ["cmd"], key: "d" }}
                 />
-                {/* <Action.CopyToClipboard title="Copy All Colors" content={palette.colors.join(", ")} />
-                <Action.CopyToClipboard title="Copy First Color" content={palette.colors[0]} /> */}
+
                 <Action
                   title="Delete Palette"
                   onAction={() => deletePalette(palette.id)}

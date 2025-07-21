@@ -156,20 +156,11 @@ export default function Command() {
                       text={palette.mode.charAt(0).toUpperCase() + palette.mode.slice(1) + " Color Palette"}
                     />
                     <List.Item.Detail.Metadata.TagList title="Keywords">
-                      {palette.keywords && palette.keywords.length > 0 ? (
+                      {palette.keywords &&
+                        palette.keywords.length > 0 &&
                         palette.keywords.map((keyword, idx) => (
-                          <List.Item.Detail.Metadata.TagList.Item
-                            key={idx}
-                            text={keyword}
-                            color={palette.mode === "dark" ? "#000000" : "#ffffff"}
-                          />
-                        ))
-                      ) : (
-                        <List.Item.Detail.Metadata.TagList.Item
-                          text="None"
-                          color={palette.mode === "dark" ? "#000000" : "#ffffff"}
-                        />
-                      )}
+                          <List.Item.Detail.Metadata.TagList.Item key={idx} text={keyword} />
+                        ))}
                     </List.Item.Detail.Metadata.TagList>
                     <List.Item.Detail.Metadata.Separator />
                     {palette.colors.map((color, idx) => (

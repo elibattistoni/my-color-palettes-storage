@@ -1,5 +1,5 @@
 import { Form } from "@raycast/api";
-import { ColorPaletteFormFields } from "../types";
+import { PaletteFormFields } from "../types";
 
 interface ColorFieldsSectionProps {
   colors: { id: number; color: string }[];
@@ -12,7 +12,7 @@ export function ColorFieldsSection({ colors, itemProps, getFocusField }: ColorFi
     <>
       <Form.Separator />
       {colors.map((color, index) => {
-        const colorKey = `color${index + 1}` as keyof ColorPaletteFormFields;
+        const colorKey = `color${index + 1}` as keyof PaletteFormFields;
         const shouldFocus = getFocusField() === colorKey;
         return (
           <Form.TextField

@@ -1,21 +1,20 @@
 import { useLocalStorage } from "@raycast/utils";
-import { ColorPaletteFormFields } from "../types";
+import { PaletteFormFields } from "../types";
 
-export function useKeywords(draftValues?: ColorPaletteFormFields) {
+export function useKeywords(draftValues?: PaletteFormFields) {
   const { value: keywords, setValue: setKeywords } = useLocalStorage<string[]>(
     "color-palettes-keywords",
     draftValues?.keywords || [],
   );
 
-  const updateKeywords = async (keywordsText: string, setFormValues: any) => {
+  const updateKeywords = async (keywordsText: string) => {
     const inputKeywords = keywordsText
       .split(",")
       .map((keyword) => keyword.trim())
       .filter(Boolean);
 
     let newKeywords = [...(keywords ?? [])];
-
-    const newlyAddedKeywords = inputKeywords.filter((keyword) => !keyword.startsWith("!"));
+    const updatedKeywords = inputKeywords.filter((keyword) => !keyword.startsWith("!"));
 
     inputKeywords.forEach((keyword) => {
       if (keyword.startsWith("!")) {
@@ -31,7 +30,9 @@ export function useKeywords(draftValues?: ColorPaletteFormFields) {
     });
 
     await setKeywords(newKeywords);
-    setFormValues("keywords", (prev: string[]) => [...prev, ...newlyAddedKeywords]);
+
+    // Return the newly added keywords so the component can update the form
+    return updatedKeywords;
   };
 
   return {

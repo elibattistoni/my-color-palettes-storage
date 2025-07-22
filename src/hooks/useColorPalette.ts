@@ -1,22 +1,21 @@
 import { showToast, Toast } from "@raycast/api";
 import { useLocalStorage } from "@raycast/utils";
 import { useState } from "react";
-import { ColorPaletteFormFields, SavedPalette } from "../types";
+import { CLEAR_COLORS_ARRAY } from "../constants";
+import { Color, PaletteFormFields, StoredPalette } from "../types";
 
-const defaultColors = [{ id: 1, color: "" }];
-
-export function useColorPalette(draftValues?: ColorPaletteFormFields) {
-  const [colors, setColors] = useState<{ id: number; color: string }[]>(() => {
+export function useColorPalette(draftValues?: PaletteFormFields) {
+  const [colors, setColors] = useState<Color[]>(() => {
     if (draftValues) {
       const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
       if (colorKeys.length > 0) {
         return colorKeys.map((_, index) => ({ id: index + 1, color: "" }));
       }
     }
-    return defaultColors;
+    return CLEAR_COLORS_ARRAY;
   });
 
-  const { value: colorPalettes, setValue: setColorPalettes } = useLocalStorage<SavedPalette[]>(
+  const { value: colorPalettes, setValue: setColorPalettes } = useLocalStorage<StoredPalette[]>(
     "color-palettes-list",
     [],
   );
@@ -26,7 +25,7 @@ export function useColorPalette(draftValues?: ColorPaletteFormFields) {
     if (draftValues && Object.keys(draftValues).length > 0) {
       // Find all color fields that have values
       const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
-      const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof ColorPaletteFormFields]);
+      const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof PaletteFormFields]);
 
       if (colorFieldsWithValues.length > 0) {
         // Focus on the field after the last filled color field
@@ -63,7 +62,7 @@ export function useColorPalette(draftValues?: ColorPaletteFormFields) {
   };
 
   const clearForm = (reset: (values: any) => void) => {
-    setColors(defaultColors);
+    setColors(CLEAR_COLORS_ARRAY);
     reset({
       name: "",
       description: "",
@@ -73,15 +72,15 @@ export function useColorPalette(draftValues?: ColorPaletteFormFields) {
     });
   };
 
-  const submitPalette = async (values: ColorPaletteFormFields, clearFormFn: () => void, navigateToView: () => void) => {
+  const submitPalette = async (values: PaletteFormFields, clearFormFn: () => void, navigateToView: () => void) => {
     try {
       // Extract colors from form values
       const colorValues = colors
-        .map((_, index) => values[`color${index + 1}` as keyof ColorPaletteFormFields])
+        .map((_, index) => values[`color${index + 1}` as keyof PaletteFormFields])
         .filter(Boolean) as string[];
 
       // Create palette object
-      const palette: SavedPalette = {
+      const palette: StoredPalette = {
         id: Date.now().toString(),
         name: values.name,
         description: values.description,

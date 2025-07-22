@@ -1,46 +1,21 @@
-import { Form, Icon, LaunchProps, open, showToast, Toast } from "@raycast/api";
+import { Form, Icon, LaunchProps, open } from "@raycast/api";
 import { FormValidation, useForm } from "@raycast/utils";
 import { ColorFieldsSection } from "./components/ColorFieldsSection";
 import { ColorPaletteActions } from "./components/ColorPaletteActions";
 import { KeywordsSection } from "./components/KeywordsSection";
+import { CLEAR_FORM_VALUES } from "./constants";
 import { useColorPalette } from "./hooks/useColorPalette";
 import { useKeywords } from "./hooks/useKeywords";
-import { ColorPaletteFormFields } from "./types";
-import { isValidColor } from "./utils";
+import { PaletteFormFields } from "./types";
 
-const defaultFormValues: ColorPaletteFormFields = {
-  name: "",
-  description: "",
-  mode: "",
-  keywords: [],
-  color1: "",
-};
+import { isValidColor } from "./utils/isValidColor";
+import { pickColor } from "./utils/pickColor";
 
-export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFormFields }>) {
+export default function Command(props: LaunchProps<{ draftValues: PaletteFormFields }>) {
   const { draftValues } = props;
 
-  // Custom hooks
   const { colors, addColor, removeColor, clearForm, submitPalette, getFocusField } = useColorPalette(draftValues);
   const { keywords, updateKeywords } = useKeywords(draftValues);
-
-  async function pickColor() {
-    try {
-      showToast({
-        style: Toast.Style.Success,
-        title: "Opening Color Picker",
-        message: "The picked color will be copied to clipboard",
-      });
-
-      await open("raycast://extensions/thomas/color-picker/pick-color");
-    } catch (error) {
-      console.log("Failed to launch color picker:", error);
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Error",
-        message: "Failed to open color picker extension",
-      });
-    }
-  }
 
   const getValidationRules = () => {
     const rules: Record<string, any> = {
@@ -61,7 +36,7 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
       },
     };
 
-    // Add validation for each color field
+    // Add validation for each color field present in the form
     colors.forEach((_, index) => {
       const colorKey = `color${index + 1}`;
       if (index === 0) {
@@ -92,7 +67,7 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
     itemProps,
     reset,
     setValue: setFormValues,
-  } = useForm<ColorPaletteFormFields>({
+  } = useForm<PaletteFormFields>({
     async onSubmit(values) {
       const clearFormFn = () => clearForm(reset);
       const navigateToView = () =>
@@ -100,11 +75,13 @@ export default function Command(props: LaunchProps<{ draftValues: ColorPaletteFo
       await submitPalette(values, clearFormFn, navigateToView);
     },
     validation: getValidationRules(),
-    initialValues: draftValues || defaultFormValues,
+    initialValues: draftValues || CLEAR_FORM_VALUES,
   });
 
   const handleUpdateKeywords = async (keywordsText: string) => {
-    await updateKeywords(keywordsText, setFormValues);
+    const updatedKeywords = await updateKeywords(keywordsText);
+    // Update the form with the newly added keywords
+    setFormValues("keywords", (prev: string[]) => [...prev, ...updatedKeywords]);
   };
 
   return (

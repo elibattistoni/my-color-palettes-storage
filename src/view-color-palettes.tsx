@@ -2,20 +2,13 @@ import { Action, ActionPanel, Detail, Icon, Keyboard, LaunchType, List, showToas
 import { useLocalStorage } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import SaveColorPalettesCommand from "./save-color-palettes";
-import { SavedPalette } from "./types";
+import { StoredPalette } from "./types";
+import { formatDate } from "./utils/formatDate";
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const day = pad(date.getDate());
-  const month = pad(date.getMonth() + 1);
-  const year = date.getFullYear();
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-};
+//>>> TODO ELISA add command that calls the Convert Colors command from color picker
+//>> TODO command that uses the name colors from the color picker extension to name the colors
 
-const createMdOverview = (palette: SavedPalette) => {
+const createMdOverview = (palette: StoredPalette) => {
   return `
 # ${palette.name}
 
@@ -23,7 +16,7 @@ const createMdOverview = (palette: SavedPalette) => {
 `;
 };
 
-const createMdDetails = (palette: SavedPalette) => {
+const createMdDetails = (palette: StoredPalette) => {
   const colorSwatches = palette.colors
     .map(
       (color) =>
@@ -59,10 +52,10 @@ export default function Command() {
     value: colorPalettes,
     setValue: setColorPalettes,
     isLoading,
-  } = useLocalStorage<SavedPalette[]>("color-palettes-list", []);
+  } = useLocalStorage<StoredPalette[]>("color-palettes-list", []);
 
   const [searchText, setSearchText] = useState("");
-  const [filteredList, setFilteredList] = useState<SavedPalette[]>([]);
+  const [filteredList, setFilteredList] = useState<StoredPalette[]>([]);
 
   useEffect(() => {
     if (colorPalettes && colorPalettes.length > 0) {
@@ -104,7 +97,7 @@ export default function Command() {
     }
   };
 
-  const createEditableFormData = (palette: SavedPalette, isDuplicate = false) => {
+  const createEditableFormData = (palette: StoredPalette, isDuplicate = false) => {
     const formData: any = {
       name: isDuplicate ? `${palette.name} (Copy)` : palette.name,
       description: palette.description,

@@ -1,4 +1,9 @@
-export type ColorPaletteFormFields = {
+export type Color = {
+  id: number;
+  color: string;
+};
+
+export type PaletteFormFields = {
   name: string;
   description: string;
   mode: string;
@@ -6,7 +11,7 @@ export type ColorPaletteFormFields = {
   [key: `color${number}`]: string;
 };
 
-export type SavedPalette = {
+export type StoredPalette = {
   id: string;
   name: string;
   description: string;

@@ -9,11 +9,7 @@ import { formatDate } from "./utils/formatDate";
 //>> TODO command that uses the name colors from the color picker extension to name the colors
 
 /**
- * Creates a markdown overview for palette preview in the list view.
- * Provides a concise summary of the palette information.
- *
- * @param palette - The stored palette data to create overview for
- * @returns Formatted markdown string for preview display
+ * Creates a markdown overview for palette preview in list view.
  */
 const createMdOverview = (palette: StoredPalette) => {
   return `
@@ -24,17 +20,7 @@ const createMdOverview = (palette: StoredPalette) => {
 };
 
 /**
- * Creates a comprehensive markdown detail view for a color palette.
- * Includes visual color swatches, metadata, and formatted color list.
- *
- * @param palette - The stored palette data to create detailed view for
- * @returns Rich markdown content with embedded HTML for color visualization
- *
- * @example
- * ```tsx
- * const detailMarkdown = createMdDetails(palette);
- * // Returns formatted markdown with color swatches and metadata
- * ```
+ * Creates detailed markdown view with color swatches and metadata.
  */
 const createMdDetails = (palette: StoredPalette) => {
   // Create visual color swatches using inline HTML for better presentation
@@ -72,42 +58,8 @@ ${colorSwatches}
 /**
  * Color Palette Viewer Command
  *
- * This is the main command component for viewing, managing, and organizing saved color palettes.
- * It provides a comprehensive interface for palette management with search, filter, and CRUD operations.
- *
- * **Key Features:**
- * - List view with real-time search and filtering
- * - Rich detail view with visual color swatches
- * - Full CRUD operations (Create, Read, Update, Delete)
- * - Palette duplication for quick variations
- * - Keyboard shortcuts for common actions
- * - Copy individual colors or entire palettes to clipboard
- * - Export palettes in various formats
- *
- * **Search Capabilities:**
- * - Search by palette name (case-insensitive)
- * - Search by description content
- * - Search by keywords/tags
- * - Real-time filtering as user types
- *
- * **Data Management:**
- * - Persists data using Raycast's local storage
- * - Handles loading states and error conditions
- * - Maintains data consistency across operations
- * - Provides user feedback for all operations
- *
- * **Navigation:**
- * - Seamless integration with palette creation command
- * - Support for editing existing palettes
- * - Draft restoration for interrupted editing sessions
- *
- * @returns The main list interface component for palette management
- *
- * @example
- * ```tsx
- * // Called by Raycast when user activates the view command
- * <Command />
- * ```
+ * Main interface for viewing, managing, and organizing saved color palettes.
+ * Provides search, filtering, and CRUD operations with keyboard shortcuts.
  */
 export default function Command() {
   // === Data Management ===
@@ -152,15 +104,6 @@ export default function Command() {
 
   /**
    * Deletes a palette from local storage with user feedback.
-   * Provides success/error notifications and handles error recovery.
-   *
-   * @param paletteId - Unique identifier of the palette to delete
-   *
-   * @example
-   * ```tsx
-   * await deletePalette("1642584000000");
-   * // Shows success toast and removes palette from list
-   * ```
    */
   const deletePalette = async (paletteId: string) => {
     try {
@@ -183,18 +126,7 @@ export default function Command() {
   };
 
   /**
-   * Converts a stored palette into form data for editing or duplication.
-   * Transforms the storage format back into form field structure.
-   *
-   * @param palette - The stored palette to convert
-   * @param isDuplicate - Whether this is for duplication (affects name handling)
-   * @returns Form data object compatible with the save command
-   *
-   * @example
-   * ```tsx
-   * const formData = createEditableFormData(palette, false);
-   * // Returns: { name: "Ocean", mode: "light", color1: "#1E90FF", ... }
-   * ```
+   * Converts stored palette into form data for editing or duplication.
    */
   const createEditableFormData = (palette: StoredPalette, isDuplicate = false) => {
     const formData: any = {

@@ -47,6 +47,8 @@ import { useCallback, useRef, useState } from "react";
 export function useRealTimeFocus() {
   // Track the currently focused field ID
   const [currentFocusedField, setCurrentFocusedField] = useState<string | null>(null);
+  // Track the last focused field to maintain context when actions panel opens
+  const [lastFocusedField, setLastFocusedField] = useState<string | null>(null);
 
   // Use ref to avoid stale closures in event handlers
   const focusedFieldRef = useRef<string | null>(null);
@@ -56,9 +58,17 @@ export function useRealTimeFocus() {
    * Uses both state and ref to ensure handlers have current value.
    */
   const setFocusedField = useCallback((fieldId: string | null) => {
+    // If we're setting a real field (not null), update last focused
+    if (fieldId) {
+      setLastFocusedField(fieldId);
+    }
+
     setCurrentFocusedField(fieldId);
     focusedFieldRef.current = fieldId;
   }, []);
+
+  // Get the effective focused field (current if available, otherwise last)
+  const effectiveFocusedField = currentFocusedField || lastFocusedField;
 
   /**
    * Creates onFocus and onBlur handlers for a specific form field.
@@ -86,6 +96,7 @@ export function useRealTimeFocus() {
 
   return {
     currentFocusedField,
+    effectiveFocusedField,
     setFocusedField,
     createFocusHandlers,
   };

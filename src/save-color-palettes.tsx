@@ -5,7 +5,6 @@ import { ColorPaletteActions } from "./components/ColorPaletteActions";
 import { KeywordsSection } from "./components/KeywordsSection";
 import { CLEAR_FORM_VALUES } from "./constants";
 import { useColorFields } from "./hooks/useColorFields";
-import { useDraftColorFieldFocus } from "./hooks/useFormFocus";
 import { useKeywords } from "./hooks/useKeywords";
 import { usePaletteSubmission } from "./hooks/usePaletteSubmission";
 import { useRealTimeFocus } from "./hooks/useRealTimeFocus";
@@ -15,47 +14,10 @@ import { createValidationRules } from "./utils/formValidation";
 /**
  * Color Palette Creation Command
  *
- * This is the main command component for creating new color palettes in the Raycast extension.
- * It provides a comprehensive form interface with dynamic fields, validation, and draft support.
+ * Main form component for creating color palettes with dynamic fields, validation, and draft support.
+ * Uses custom hooks for separation of concerns and clean component composition.
  *
- * **Architecture:**
- * - Built using React functional components with custom hooks
- * - Follows separation of concerns with dedicated hooks for different responsibilities
- * - Uses Raycast's Form API with proper validation and draft management
- * - Implements clean component composition with reusable UI sections
- *
- * **Key Features:**
- * - Dynamic color field management (add/remove colors)
- * - Real-time form validation with custom rules
- * - Draft persistence for interrupted sessions
- * - Color picker integration for easy color selection
- * - Keyword tagging system for palette organization
- * - Automatic focus management for better UX
- * - Toast notifications and navigation after submission
- *
- * **Data Flow:**
- * 1. Form state managed by Raycast's useForm hook
- * 2. Color fields managed by custom useColorPalette hook
- * 3. Keywords managed by dedicated useKeywords hook
- * 4. Submission handled by usePaletteSubmission hook
- * 5. Focus behavior controlled by useFormFocus hook
- *
- * **Component Structure:**
- * ```
- * Command (main orchestrator)
- * ├── ColorPaletteActions (action buttons)
- * ├── KeywordsSection (keyword management)
- * └── ColorFieldsSection (dynamic color inputs)
- * ```
- *
- * @param props - Launch properties including optional draft values for form restoration
  * @param props.draftValues - Previously saved form data for resuming interrupted sessions
- *
- * @example
- * ```tsx
- * // Called by Raycast when user activates the command
- * <Command draftValues={savedDraft} />
- * ```
  */
 export default function Command(props: LaunchProps<{ draftValues: PaletteFormFields }>) {
   const { draftValues } = props;
@@ -63,26 +25,44 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
   // === State Management Hooks ===
   // Each hook has a single responsibility following React best practices
 
-  /** Manages dynamic color field state (add/remove/clear color field UI) */
+  /** Manages dynamic color field state */
   const { colorFieldCount, addColorField, removeColorField, resetColorFields } = useColorFields(draftValues);
 
-  /** Handles keyword parsing and management for palette tagging */
+  /** Handles keyword parsing and management */
   const { keywords, updateKeywords } = useKeywords(draftValues);
 
-  /** Encapsulates palette submission, storage, and navigation logic */
+  /** Encapsulates palette submission logic */
   const { submitPalette } = usePaletteSubmission();
 
-  /** Determines which color field should receive focus based on draft state */
-  const { getDraftColorFieldFocus } = useDraftColorFieldFocus(colorFieldCount, draftValues);
+  /** Tracks currently focused form field and manages draft restoration */
+  const { currentFocusedField, effectiveFocusedField, createFocusHandlers, setFocusedField } = useRealTimeFocus();
 
-  /** Tracks currently focused form field in real-time */
-  const { currentFocusedField, createFocusHandlers } = useRealTimeFocus();
+  // Calculate which field should get autoFocus for draft restoration
+  const getAutoFocusField = (): string | null => {
+    if (!draftValues || Object.keys(draftValues).length === 0) {
+      return null;
+    }
+
+    const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
+    const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof PaletteFormFields]);
+
+    if (colorFieldsWithValues.length > 0) {
+      const lastFilledIndex = Math.max(...colorFieldsWithValues.map((key) => parseInt(key.replace("color", ""))));
+      const nextFieldIndex = lastFilledIndex + 1;
+      return nextFieldIndex <= colorFieldCount ? `color${nextFieldIndex}` : `color${colorFieldCount}`;
+    } else {
+      return "color1";
+    }
+  };
+
+  const autoFocusField = getAutoFocusField();
+
+  console.log("☀️ ☀️ ☀️ ", currentFocusedField, effectiveFocusedField);
 
   // === Local Event Handlers ===
 
   /**
    * Resets the entire form to its initial state.
-   * Clears both color fields and form values for a fresh start.
    */
   const handleClearForm = () => {
     resetColorFields();
@@ -113,17 +93,22 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
   // === Local Event Handlers ===
 
   /**
-   * Removes the last color field and clears its value from the form.
-   *
-   * This function solves the issue where removing a color field would only hide it from the UI
-   * but leave the form value in memory. When a new field was added later, it would pick up
-   * the old value that was never cleared.
-   *
-   * **Fix Steps:**
-   * 1. Clear the form value for the last color field
-   * 2. Decrement the color field count (which hides the field from UI)
-   *
-   * This ensures complete cleanup when removing color fields.
+   * Adds a new color field and focuses on it for immediate input.
+   */
+  const handleAddColorField = () => {
+    // Add the new color field
+    addColorField();
+
+    // Focus on the newly added color field with a slight delay to ensure DOM is updated
+    setTimeout(() => {
+      const newColorField = `color${colorFieldCount + 1}`;
+      setFocusedField(newColorField);
+    }, 0);
+  };
+
+  /**
+   * Removes the last color field and clears its form value.
+   * Ensures complete cleanup when removing color fields and sets focus to the new last color field.
    */
   const handleRemoveColorField = () => {
     if (colorFieldCount > 1) {
@@ -133,14 +118,15 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
 
       // Remove the color field from the UI
       removeColorField();
+
+      // Focus on the new last color field after removal
+      const newLastColorField = `color${colorFieldCount - 1}`;
+      setFocusedField(newLastColorField);
     }
   };
 
   /**
    * Handles keyword input parsing and form state updates.
-   * Parses comma-separated keywords and updates both local state and form.
-   *
-   * @param keywordsText - Raw comma-separated keyword string from user input
    */
   const handleUpdateKeywords = async (keywordsText: string) => {
     const updatedKeywords = await updateKeywords(keywordsText);
@@ -148,11 +134,11 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
   };
 
   /**
-   * Gets the currently focused color with both ID and value based on form focus and form values.
-   * Returns the color index (1-based) and value from the focused field, or the first color if none focused.
+   * Gets the effectively focused color with ID and value, or fallback to first color.
+   * Uses effective focus (current or last focused field) to maintain context during action panel interactions.
    */
-  const getCurrentColor = (): { id: number; value: string } | undefined => {
-    const focusedField = currentFocusedField;
+  const getEffectiveFocusedColor = (): { id: number; value: string } | undefined => {
+    const focusedField = effectiveFocusedField;
     if (focusedField && focusedField.startsWith("color")) {
       // Extract the color index from the field name (e.g., "color1" -> 1)
       const colorIndex = parseInt(focusedField.replace("color", ""));
@@ -176,11 +162,11 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
       actions={
         <ColorPaletteActions
           handleSubmit={handleSubmit}
-          addColor={addColorField}
+          addColor={handleAddColorField}
           removeColor={handleRemoveColorField}
           clearForm={handleClearForm}
           colorFieldCount={colorFieldCount}
-          currentColor={getCurrentColor()}
+          focusedColor={getEffectiveFocusedColor()}
         />
       }
       enableDrafts
@@ -211,7 +197,8 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
       <ColorFieldsSection
         colorFieldCount={colorFieldCount}
         itemProps={itemProps}
-        getColorFieldFocus={getDraftColorFieldFocus}
+        autoFocusField={autoFocusField}
+        currentFocusedField={currentFocusedField}
         createFocusHandlers={createFocusHandlers}
       />
     </Form>

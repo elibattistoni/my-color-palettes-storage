@@ -37,38 +37,6 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
   /** Tracks currently focused form field and manages draft restoration */
   const { currentFocusedField, effectiveFocusedField, createFocusHandlers, setFocusedField } = useRealTimeFocus();
 
-  // Calculate which field should get autoFocus for draft restoration
-  const getAutoFocusField = (): string | null => {
-    if (!draftValues || Object.keys(draftValues).length === 0) {
-      return null;
-    }
-
-    const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
-    const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof PaletteFormFields]);
-
-    if (colorFieldsWithValues.length > 0) {
-      const lastFilledIndex = Math.max(...colorFieldsWithValues.map((key) => parseInt(key.replace("color", ""))));
-      const nextFieldIndex = lastFilledIndex + 1;
-      return nextFieldIndex <= colorFieldCount ? `color${nextFieldIndex}` : `color${colorFieldCount}`;
-    } else {
-      return "color1";
-    }
-  };
-
-  const autoFocusField = getAutoFocusField();
-
-  console.log("☀️ ☀️ ☀️ ", currentFocusedField, effectiveFocusedField);
-
-  // === Local Event Handlers ===
-
-  /**
-   * Resets the entire form to its initial state.
-   */
-  const handleClearForm = () => {
-    resetColorFields();
-    reset(CLEAR_FORM_VALUES);
-  };
-
   // === Form Management ===
   // Raycast's form hook with custom validation and submission handling
   const {
@@ -89,6 +57,65 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
     validation: createValidationRules(colorFieldCount),
     initialValues: draftValues || CLEAR_FORM_VALUES,
   });
+
+  // === Helper Functions ===
+
+  /**
+   * Calculates which field should get autoFocus for draft restoration.
+   * Determines the next logical field to focus based on existing draft values.
+   */
+  const getAutoFocusField = (): string | null => {
+    if (!draftValues || Object.keys(draftValues).length === 0) {
+      return null;
+    }
+
+    const colorKeys = Object.keys(draftValues).filter((key) => key.startsWith("color"));
+    const colorFieldsWithValues = colorKeys.filter((key) => draftValues[key as keyof PaletteFormFields]);
+
+    if (colorFieldsWithValues.length > 0) {
+      const lastFilledIndex = Math.max(...colorFieldsWithValues.map((key) => parseInt(key.replace("color", ""))));
+      const nextFieldIndex = lastFilledIndex + 1;
+      return nextFieldIndex <= colorFieldCount ? `color${nextFieldIndex}` : `color${colorFieldCount}`;
+    } else {
+      return "color1";
+    }
+  };
+
+  /**
+   * Gets the effectively focused color with ID and value, or fallback to first color.
+   * Uses effective focus (current or last focused field) to maintain context during action panel interactions.
+   */
+  const getEffectiveFocusedColor = (): { id: number; value: string } | undefined => {
+    const focusedField = effectiveFocusedField;
+    if (focusedField && focusedField.startsWith("color")) {
+      // Extract the color index from the field name (e.g., "color1" -> 1)
+      const colorIndex = parseInt(focusedField.replace("color", ""));
+      const fieldValue = values[focusedField as keyof PaletteFormFields];
+
+      // Ensure we only return valid color data with string values
+      if (colorIndex <= colorFieldCount && typeof fieldValue === "string" && fieldValue) {
+        return { id: colorIndex, value: fieldValue };
+      }
+    }
+    // Fallback to first color if no specific focus
+    const firstColorValue = values.color1;
+    if (typeof firstColorValue === "string" && firstColorValue) {
+      return { id: 1, value: firstColorValue };
+    }
+    return undefined;
+  };
+
+  const autoFocusField = getAutoFocusField();
+
+  // === Local Event Handlers ===
+
+  /**
+   * Resets the entire form to its initial state.
+   */
+  const handleClearForm = () => {
+    resetColorFields();
+    reset(CLEAR_FORM_VALUES);
+  };
 
   // === Local Event Handlers ===
 
@@ -131,30 +158,6 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
   const handleUpdateKeywords = async (keywordsText: string) => {
     const updatedKeywords = await updateKeywords(keywordsText);
     setFormValues("keywords", (prev: string[]) => [...prev, ...updatedKeywords]);
-  };
-
-  /**
-   * Gets the effectively focused color with ID and value, or fallback to first color.
-   * Uses effective focus (current or last focused field) to maintain context during action panel interactions.
-   */
-  const getEffectiveFocusedColor = (): { id: number; value: string } | undefined => {
-    const focusedField = effectiveFocusedField;
-    if (focusedField && focusedField.startsWith("color")) {
-      // Extract the color index from the field name (e.g., "color1" -> 1)
-      const colorIndex = parseInt(focusedField.replace("color", ""));
-      const fieldValue = values[focusedField as keyof PaletteFormFields];
-
-      // Ensure we only return valid color data with string values
-      if (colorIndex <= colorFieldCount && typeof fieldValue === "string" && fieldValue) {
-        return { id: colorIndex, value: fieldValue };
-      }
-    }
-    // Fallback to first color if no specific focus
-    const firstColorValue = values.color1;
-    if (typeof firstColorValue === "string" && firstColorValue) {
-      return { id: 1, value: firstColorValue };
-    }
-    return undefined;
   };
 
   return (

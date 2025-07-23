@@ -7,6 +7,7 @@
  */
 
 import { Action, ActionPanel } from "@raycast/api";
+import { pickColor } from "../utils/pickColor";
 
 /**
  * Props interface for the ColorPaletteActions component.
@@ -18,8 +19,6 @@ interface ColorPaletteActionsProps {
   addColor: () => void;
   /** Function to remove a specific color field by ID */
   removeColor: (colorId: number) => void;
-  /** Function to launch external color picker tool */
-  pickColor: () => Promise<void>;
   /** Function to reset the entire form to initial state */
   clearForm: () => void;
   /** Current array of color field configurations */
@@ -80,7 +79,6 @@ export function ColorPaletteActions({
   handleSubmit,
   addColor,
   removeColor,
-  pickColor,
   clearForm,
   colors,
 }: ColorPaletteActionsProps) {

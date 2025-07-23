@@ -58,7 +58,7 @@ import { PaletteFormFields, StoredPalette } from "../types";
 export function usePaletteSubmission() {
   // Access local storage for palette persistence using Raycast's utilities
   // The storage key "color-palettes-list" is shared across the extension
-  const { value: colorPalettes, setValue: setColorPalettes } = useLocalStorage<StoredPalette[]>(
+  const { value: storedPalettes, setValue: setStoredPalettes } = useLocalStorage<StoredPalette[]>(
     "color-palettes-list",
     [],
   );
@@ -109,8 +109,8 @@ export function usePaletteSubmission() {
       };
 
       // Prepend new palette to maintain chronological order (newest first)
-      const updatedPalettes = [palette, ...(colorPalettes ?? [])];
-      await setColorPalettes(updatedPalettes);
+      const updatedPalettes = [palette, ...(storedPalettes ?? [])];
+      await setStoredPalettes(updatedPalettes);
 
       // Provide detailed success feedback to user
       showToast({

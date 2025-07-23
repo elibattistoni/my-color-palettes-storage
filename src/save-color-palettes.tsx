@@ -122,7 +122,6 @@ export default function Command(props: LaunchProps<{ draftValues: PaletteFormFie
           handleSubmit={handleSubmit}
           addColor={addColor}
           removeColor={removeColor}
-          pickColor={pickColor}
           clearForm={clearForm}
           colors={colors}
         />

@@ -50,7 +50,7 @@ export async function pickColor() {
     open("raycast://extensions/thomas/color-picker/pick-color");
   } catch (error) {
     // Log error for debugging while providing user-friendly feedback
-    console.log("Failed to launch color picker:", error);
+    console.log("Failed to launch Color Picker:", error);
     showToast({
       style: Toast.Style.Failure,
       title: "Error",

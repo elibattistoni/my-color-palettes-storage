@@ -19,6 +19,8 @@ interface KeywordsSectionProps {
   itemProps: any;
   /** Function to update the global keywords list and form state */
   updateKeywords: (keywordsText: string) => Promise<void>;
+  /** Function to create focus handlers for real-time focus tracking */
+  createFocusHandlers?: (fieldName: string) => { onFocus: () => void; onBlur: () => void };
 }
 
 /**
@@ -62,15 +64,15 @@ interface KeywordsSectionProps {
  * />
  * ```
  */
-export function KeywordsSection({ keywords, itemProps, updateKeywords }: KeywordsSectionProps) {
+export function KeywordsSection({ keywords, itemProps, updateKeywords, createFocusHandlers }: KeywordsSectionProps) {
   /** Local state for the keyword input field value */
   const [updateKeywordsValue, setUpdateKeywordsValue] = useState("");
 
   /**
-   * Handles the keyword update workflow when user finishes entering keywords.
-   * Processes the input, updates global storage, provides feedback, and clears the input.
+   * Combined handler for updating keywords and handling blur event for focus tracking.
+   * First handles focus tracking if createFocusHandlers is provided, then processes keywords.
    */
-  const handleKeywordUpdate = async () => {
+  const handleKeywordUpdateAndBlur = async () => {
     if (updateKeywordsValue.trim()) {
       await updateKeywords(updateKeywordsValue);
       showToast({
@@ -82,6 +84,20 @@ export function KeywordsSection({ keywords, itemProps, updateKeywords }: Keyword
     }
   };
 
+  // Get focus handlers for both form fields
+  const keywordsFocusHandlers = createFocusHandlers ? createFocusHandlers("keywords") : {};
+  const updateKeywordsFocusHandlers = createFocusHandlers ? createFocusHandlers("updateKeywords") : {};
+
+  // Combine the keyword update logic with focus tracking for the blur handler
+  const handleCombinedBlur = async () => {
+    // First handle the focus tracking
+    if (updateKeywordsFocusHandlers && "onBlur" in updateKeywordsFocusHandlers) {
+      (updateKeywordsFocusHandlers as any).onBlur();
+    }
+    // Then handle the keyword update logic
+    await handleKeywordUpdateAndBlur();
+  };
+
   return (
     <>
       {/* Tag picker for selecting from existing keywords */}
@@ -89,19 +105,21 @@ export function KeywordsSection({ keywords, itemProps, updateKeywords }: Keyword
         {...itemProps.keywords}
         title="Keywords"
         info="Pick one or more Keywords. Keywords will be used to search and filter Color Palettes. If the Keywords list is empty, add them through the Update Keywords field. To remove a keyword from the Keywords list, enter !keyword-to-remove in the Update Keywords field."
+        {...keywordsFocusHandlers}
       >
         {keywords && keywords.map((keyword, idx) => <Form.TagPicker.Item key={idx} value={keyword} title={keyword} />)}
       </Form.TagPicker>
 
       {/* Text input for adding new keywords or removing existing ones */}
       <Form.TextField
-        id="updateTags"
+        id="updateKeywords"
         title="Update Keywords"
         value={updateKeywordsValue}
         onChange={setUpdateKeywordsValue}
         placeholder="e.g., keyword1, keyword2, !keyword-to-remove"
         info="Enter Keywords separated by commas. Press Tab or move out of focus in order to add them to the Keywords List in the Keywords field above."
-        onBlur={handleKeywordUpdate}
+        onFocus={"onFocus" in updateKeywordsFocusHandlers ? (updateKeywordsFocusHandlers as any).onFocus : undefined}
+        onBlur={handleCombinedBlur}
       />
     </>
   );

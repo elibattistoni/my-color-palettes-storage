@@ -1,6 +1,7 @@
 import { open, showToast, Toast } from "@raycast/api";
 import { useLocalStorage } from "@raycast/utils";
 import { PaletteFormFields, StoredPalette } from "../types";
+import { extractColorValues } from "../utils/formHelpers";
 
 /**
  * Custom hook for handling color palette submission and persistence logic.
@@ -11,6 +12,7 @@ import { PaletteFormFields, StoredPalette } from "../types";
  * handling the underlying storage and navigation complexity.
  *
  * **Responsibilities:**
+ * - Extracts and validates color values from form data
  * - Transforms form data into persistable storage format
  * - Manages local storage operations for palette persistence
  * - Generates unique IDs and timestamps for new palettes
@@ -34,10 +36,10 @@ import { PaletteFormFields, StoredPalette } from "../types";
  * const { submitPalette } = usePaletteSubmission();
  *
  * const handleSubmit = async (formValues: PaletteFormFields) => {
- *   const colorValues = extractColorsFromForm(formValues);
- *   await submitPalette(formValues, colorValues, () => {
- *     // Form cleanup logic (reset, clear drafts, etc.)
- *     form.reset();
+ *   await submitPalette({
+ *     formValues,
+ *     colorCount: 3,
+ *     onSubmit: () => form.reset()
  *   });
  * };
  * ```
@@ -71,39 +73,52 @@ export function usePaletteSubmission() {
    * and provides a smooth user experience during palette creation.
    *
    * **Process Flow:**
-   * 1. Transform form data into storage-ready format
-   * 2. Generate unique ID and timestamp
-   * 3. Prepend new palette to existing list (newest first)
-   * 4. Persist to local storage
-   * 5. Show success notification with details
-   * 6. Execute form cleanup callback
-   * 7. Navigate to palettes view
-   * 8. Handle any errors with user-friendly messages
+   * 1. Extract color values from form data based on color count
+   * 2. Transform form data into storage-ready format
+   * 3. Generate unique ID and timestamp
+   * 4. Prepend new palette to existing list (newest first)
+   * 5. Persist to local storage
+   * 6. Show success notification with details
+   * 7. Execute form cleanup callback
+   * 8. Navigate to palettes view
+   * 9. Handle any errors with user-friendly messages
    *
-   * @param values - The validated form data containing palette information
-   * @param colorValues - Array of color hex codes extracted from form fields
-   * @param onSuccess - Callback function executed after successful save (for form cleanup)
+   * @param params - Object containing all submission parameters
+   * @param params.formValues - The validated form data containing palette information
+   * @param params.colorCount - Number of color fields to extract from form data
+   * @param params.onSubmit - Callback function executed after successful save (for form cleanup)
    *
    * @throws Will catch and handle any storage or navigation errors internally
    *
    * @example
    * ```typescript
-   * await submitPalette(
-   *   { name: "Ocean", mode: "light", description: "Beach vibes" },
-   *   ["#1E90FF", "#87CEEB", "#F0F8FF"],
-   *   () => form.reset()
-   * );
+   * await submitPalette({
+   *   formValues: { name: "Ocean", mode: "light", description: "Beach vibes" },
+   *   colorCount: 3,
+   *   onSubmit: () => form.reset()
+   * });
    * ```
    */
-  const submitPalette = async (values: PaletteFormFields, colorValues: string[], onSuccess: () => void) => {
+  const submitPalette = async ({
+    formValues,
+    colorCount,
+    onSubmit,
+  }: {
+    formValues: PaletteFormFields;
+    colorCount: number;
+    onSubmit: () => void;
+  }) => {
     try {
+      // Extract color values from form data (eliminates the need for duplicate parameters)
+      const colorValues = extractColorValues(formValues, colorCount);
+
       // Transform form data into the storage format with generated metadata
       const palette: StoredPalette = {
         id: Date.now().toString(), // Simple timestamp-based ID (sufficient for personal use)
-        name: values.name,
-        description: values.description,
-        mode: values.mode as "light" | "dark", // Type assertion for validated enum value
-        keywords: values.keywords || [], // Default to empty array if no keywords provided
+        name: formValues.name,
+        description: formValues.description,
+        mode: formValues.mode as "light" | "dark", // Type assertion for validated enum value
+        keywords: formValues.keywords || [], // Default to empty array if no keywords provided
         colors: colorValues, // Pre-validated hex color array
         createdAt: new Date().toISOString(), // ISO timestamp for consistent date handling
       };
@@ -116,11 +131,11 @@ export function usePaletteSubmission() {
       showToast({
         style: Toast.Style.Success,
         title: "Success!",
-        message: `${values.name} ${values.mode} color palette created with ${colorValues.length} color${colorValues.length > 1 ? "s" : ""}`,
+        message: `${formValues.name} ${formValues.mode} color palette created with ${colorValues.length} color${colorValues.length > 1 ? "s" : ""}`,
       });
 
       // Execute form cleanup operations (reset fields, clear drafts, etc.)
-      onSuccess();
+      onSubmit();
 
       // Navigate to the view palettes command to show the newly created palette
       await open("raycast://extensions/elibattistoni/my-color-palettes-storage/view-color-palettes");

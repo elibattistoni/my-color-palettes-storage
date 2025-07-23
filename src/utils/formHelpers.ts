@@ -6,33 +6,29 @@
  * the application (form state vs storage format vs UI state).
  */
 
-import { Color, PaletteFormFields } from "../types";
+import { PaletteFormFields } from "../types";
 
 /**
- * Extracts color values from form data based on the current color field configuration.
+ * Extracts non-empty color values from form data based on the number of color fields.
  *
- * Transforms the form's dynamic color fields (color1, color2, etc.) into a clean
- * array of color values, filtering out any empty or undefined values. This function
- * bridges the gap between form state and the storage format.
+ * This function takes the form values and colorCount, then extracts all non-empty
+ * color values from the form fields. It filters out any empty strings to ensure
+ * only valid colors are included in the final palette.
  *
- * **Process:**
- * 1. Maps over the color field configuration to determine which fields to extract
- * 2. Retrieves values from form data using dynamic field names (color1, color2, etc.)
- * 3. Filters out falsy values (empty strings, undefined, null)
- * 4. Returns clean array of valid color strings
- *
- * @param values - The complete form data object containing all field values
- * @param colors - Array of color field objects defining which fields to extract
- * @returns Array of non-empty color strings ready for storage
+ * @param values - The complete form values object containing all form fields
+ * @param colorCount - The number of color fields in the form
+ * @returns Array of non-empty color value strings
  *
  * @example
  * ```typescript
  * const formData = { name: "Ocean", color1: "#1E90FF", color2: "", color3: "#87CEEB" };
- * const colors = [{ id: 1, color: "" }, { id: 2, color: "" }, { id: 3, color: "" }];
- * const result = extractColorValues(formData, colors);
+ * const result = extractColorValues(formData, 3);
  * // Returns: ["#1E90FF", "#87CEEB"] (empty color2 filtered out)
  * ```
  */
-export function extractColorValues(values: PaletteFormFields, colors: Color[]): string[] {
-  return colors.map((_, index) => values[`color${index + 1}` as keyof PaletteFormFields]).filter(Boolean) as string[];
+export function extractColorValues(values: PaletteFormFields, colorCount: number): string[] {
+  return Array.from(
+    { length: colorCount },
+    (_, index) => values[`color${index + 1}` as keyof PaletteFormFields],
+  ).filter(Boolean) as string[];
 }

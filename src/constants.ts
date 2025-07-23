@@ -5,7 +5,7 @@
  * for form initialization, default states, and configuration values.
  */
 
-import { Color, PaletteFormFields } from "./types";
+import { PaletteFormFields } from "./types";
 
 /**
  * Default form values for palette creation form initialization.
@@ -31,18 +31,3 @@ export const CLEAR_FORM_VALUES: PaletteFormFields = {
   /** Default first color field (empty) */
   color1: "",
 };
-
-/**
- * Default color field array for palette creation.
- *
- * Represents the initial state of color fields when starting a new palette.
- * Ensures at least one color field is always present for UX purposes.
- * The empty color value allows users to see the field structure immediately.
- *
- * @example
- * ```typescript
- * // Reset color fields to initial state
- * setColors(CLEAR_COLORS_ARRAY);
- * ```
- */
-export const CLEAR_COLORS_ARRAY: Color[] = [{ id: 1, color: "" }];

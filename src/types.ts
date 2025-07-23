@@ -6,25 +6,6 @@
  */
 
 /**
- * Represents a color field in the dynamic form UI.
- *
- * Used by the useColorPalette hook to manage dynamic color input fields.
- * The ID provides stable React keys and the color field is typically empty
- * as actual values are managed by the form state.
- *
- * @example
- * ```typescript
- * const colorField: Color = { id: 1, color: "" };
- * ```
- */
-export type Color = {
-  /** Unique identifier for the color field (used for React keys and removal) */
-  id: number;
-  /** Color value placeholder (actual values stored in form state) */
-  color: string;
-};
-
-/**
  * Form data structure for palette creation and editing.
  *
  * Represents the complete form state including both fixed fields and dynamic

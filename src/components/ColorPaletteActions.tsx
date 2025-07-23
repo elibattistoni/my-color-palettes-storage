@@ -7,6 +7,9 @@
  */
 
 import { Action, ActionPanel } from "@raycast/api";
+import { colorWheel } from "../utils/colorWheel";
+import { convertColor } from "../utils/convertColor";
+import { generateColors } from "../utils/generateColors";
 import { pickColor } from "../utils/pickColor";
 
 /**
@@ -17,12 +20,14 @@ interface ColorPaletteActionsProps {
   handleSubmit: (values: any) => boolean | void | Promise<boolean | void>;
   /** Function to add a new color field to the form */
   addColor: () => void;
-  /** Function to remove a specific color field by ID */
-  removeColor: (colorId: number) => void;
+  /** Function to remove the last color field from the form */
+  removeColor: () => void;
   /** Function to reset the entire form to initial state */
   clearForm: () => void;
-  /** Current array of color field configurations */
-  colors: { id: number; color: string }[];
+  /** Current number of color fields in the form */
+  colorFieldCount: number;
+  /** Currently focused/selected color with both ID and value for external operations */
+  currentColor?: { id: number; value: string };
 }
 
 /**
@@ -53,9 +58,9 @@ interface ColorPaletteActionsProps {
  * @param props.handleSubmit - Form submission handler
  * @param props.addColor - Add color field function
  * @param props.removeColor - Remove color field function
- * @param props.pickColor - External color picker launcher
  * @param props.clearForm - Form reset function
  * @param props.colors - Current color field configuration
+ * @param props.currentColor - Currently focused/selected color with ID and value for external operations
  *
  * @example
  * ```tsx
@@ -65,7 +70,6 @@ interface ColorPaletteActionsProps {
  *       handleSubmit={handleSubmit}
  *       addColor={addColor}
  *       removeColor={removeColor}
- *       pickColor={pickColor}
  *       clearForm={clearForm}
  *       colors={colors}
  *     />
@@ -80,7 +84,8 @@ export function ColorPaletteActions({
   addColor,
   removeColor,
   clearForm,
-  colors,
+  colorFieldCount,
+  currentColor,
 }: ColorPaletteActionsProps) {
   return (
     <ActionPanel>
@@ -88,19 +93,24 @@ export function ColorPaletteActions({
       <Action.SubmitForm onSubmit={handleSubmit} />
 
       {/* Color field management actions */}
-      <Action title="Add Color" onAction={addColor} shortcut={{ modifiers: ["cmd"], key: "n" }} />
+      <Action title="Add New Color Field" onAction={addColor} shortcut={{ modifiers: ["cmd"], key: "n" }} />
 
       {/* Remove action only available when multiple color fields exist */}
-      {colors.length > 1 && (
-        <Action
-          title="Remove Last Color"
-          onAction={() => removeColor(colors[colors.length - 1].id)}
-          shortcut={{ modifiers: ["cmd"], key: "backspace" }}
-        />
+      {colorFieldCount > 1 && (
+        <Action title="Remove Last Color" onAction={removeColor} shortcut={{ modifiers: ["cmd"], key: "backspace" }} />
       )}
 
       {/* External tool integration */}
       <Action title="Pick Color" shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} onAction={pickColor} />
+      <Action title="Color Wheel" shortcut={{ modifiers: ["cmd", "shift"], key: "w" }} onAction={colorWheel} />
+      <Action title="Generate Colors" shortcut={{ modifiers: ["cmd", "shift"], key: "g" }} onAction={generateColors} />
+      {currentColor && (
+        <Action
+          title="Convert Color"
+          shortcut={{ modifiers: ["cmd", "shift"], key: "t" }}
+          onAction={() => convertColor(currentColor?.value)}
+        />
+      )}
 
       {/* Form management actions */}
       <Action title="Clear Form" onAction={clearForm} shortcut={{ modifiers: ["cmd", "shift"], key: "r" }} />

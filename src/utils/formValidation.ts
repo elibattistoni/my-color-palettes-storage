@@ -7,33 +7,25 @@
  */
 
 import { FormValidation } from "@raycast/utils";
-import { Color } from "../types";
 import { isValidColor } from "./isValidColor";
 
 /**
- * Creates comprehensive validation rules for the color palette form.
+ * Creates dynamic validation rules for a palette form based on the number of color fields.
  *
- * Generates dynamic validation rules based on the current color field configuration.
- * Ensures data quality and provides clear user feedback for invalid inputs.
- * The function creates rules for both static fields and dynamic color fields.
+ * This function generates a validation rules object that includes both static validation
+ * for name, mode, and description fields, as well as dynamic validation for color fields
+ * based on the provided colorCount. The first color field is always required.
  *
- * **Validation Rules:**
- * - Name: Required, max 15 characters
- * - Mode: Required selection (light/dark)
- * - Description: Optional, max 50 characters
- * - Colors: First color required and valid, others optional but must be valid if provided
- *
- * @param colors - Array of color field objects to create validation rules for
- * @returns Object containing validation functions keyed by field names
+ * @param colorCount - The number of color fields in the form
+ * @returns Object containing validation rules for all form fields
  *
  * @example
  * ```typescript
- * const colors = [{ id: 1, color: "" }, { id: 2, color: "" }];
- * const rules = createValidationRules(colors);
+ * const rules = createValidationRules(2);
  * // Returns: { name: Function, mode: Required, description: Function, color1: Function, color2: Function }
  * ```
  */
-export function createValidationRules(colors: Color[]) {
+export function createValidationRules(colorCount: number) {
   // Initialize with static field validation rules
   const rules: Record<string, any> = {
     /** Name field validation: required with character limit */
@@ -56,7 +48,7 @@ export function createValidationRules(colors: Color[]) {
   };
 
   // Dynamically add validation rules for each color field
-  colors.forEach((_, index) => {
+  Array.from({ length: colorCount }, (_, index) => {
     const colorKey = `color${index + 1}`;
     if (index === 0) {
       // First color field: required and must be a valid color format

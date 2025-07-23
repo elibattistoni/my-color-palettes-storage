@@ -290,13 +290,15 @@ export default function Command() {
                 {/* 
                 //>>> TODO ELISA check that the two commands below work as expected
                 */}
+
+                {/* NB edit palette actually creates a new copy of an existing palette: fix this */}
                 <Action.Push
-                  title="Edit Palette"
+                  title="Edit Palette (Create Copy)"
                   target={
                     <SaveColorPalettesCommand
                       launchType={LaunchType.UserInitiated}
                       arguments={{}}
-                      draftValues={createEditableFormData(palette, false)}
+                      draftValues={createEditableFormData(palette, true)}
                     />
                   }
                   icon={Icon.Pencil}

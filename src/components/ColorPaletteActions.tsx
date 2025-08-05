@@ -8,6 +8,7 @@
 import { Action, ActionPanel } from "@raycast/api";
 import { colorWheel } from "../utils/colorWheel";
 import { convertColor } from "../utils/convertColor";
+import { generateColors } from "../utils/generateColors";
 import { pickColor } from "../utils/pickColor";
 
 /**
@@ -57,7 +58,11 @@ export function ColorPaletteActions({
       {/* External tool integration */}
       <Action title="Pick Color" shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} onAction={pickColor} />
       <Action title="Color Wheel" shortcut={{ modifiers: ["cmd", "shift"], key: "w" }} onAction={colorWheel} />
-      {/* <Action title="Generate Colors" shortcut={{ modifiers: ["cmd", "shift"], key: "g" }} onAction={generateColors} /> */}
+      <Action
+        title="Generate Colors with AI"
+        shortcut={{ modifiers: ["cmd", "shift"], key: "g" }}
+        onAction={() => generateColors("ocean sunset")}
+      />
       {focusedColor && (
         <Action
           title="Convert Color"
